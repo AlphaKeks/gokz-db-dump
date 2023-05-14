@@ -126,7 +126,7 @@ impl TryFrom<RawRecord> for Record {
 				2 => Mode::KZTimer,
 				n => yeet!("{n} is not a valid mode"),
 			},
-			time: row.RunTime as f64 / 128.0,
+			time: row.RunTime as f64 / 1000.0,
 			teleports: u32::try_from(row.Teleports)?,
 			created_on: NaiveDateTime::parse_from_str(&row.Created, "%Y-%m-%d %H:%M:%S")
 				.context("Failed to convert date")?
