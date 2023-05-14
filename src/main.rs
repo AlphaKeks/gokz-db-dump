@@ -35,11 +35,14 @@ async fn main() -> Result<()> {
 		r#"
 		SELECT
 		  t.*,
+		  m.MapID AS MapID,
 		  m.Name AS MapName,
 		  p.Alias AS PlayerName
 		FROM Times AS t
+		JOIN MapCourses AS c
+		ON c.MapCourseID = t.MapCourseID
 		JOIN Maps AS m
-		ON m.MapID = t.MapCourseID
+		ON m.MapID = c.MapID
 		JOIN Players AS p
 		ON p.SteamID32 = t.SteamID32
 		"#,
@@ -90,6 +93,7 @@ struct RawRecord {
 	Teleports: i32,
 	Created: String,
 	MapName: String,
+	MapID: i32,
 	PlayerName: String,
 }
 
@@ -114,12 +118,12 @@ impl TryFrom<RawRecord> for Record {
 			id: u32::try_from(row.TimeID)?,
 			steam_id: SteamID::from_id32(u32::try_from(row.SteamID32)?),
 			player_name: row.PlayerName,
-			map_id: u16::try_from(row.MapCourseID)?,
+			map_id: u16::try_from(row.MapID)?,
 			map_name: row.MapName,
 			mode: match row.Mode {
-				0 => Mode::KZTimer,
+				0 => Mode::Vanilla,
 				1 => Mode::SimpleKZ,
-				2 => Mode::Vanilla,
+				2 => Mode::KZTimer,
 				n => yeet!("{n} is not a valid mode"),
 			},
 			time: row.RunTime as f64 / 128.0,
