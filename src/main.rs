@@ -33,7 +33,15 @@ async fn main() -> Result<()> {
 
 	let records = sqlx::query_as::<_, RawRecord>(
 		r#"
-		SELECT * FROM Times
+		SELECT
+		  t.*,
+		  m.Name AS MapName,
+		  p.Alias AS PlayerName
+		FROM Times AS t
+		JOIN Maps AS m
+		ON m.MapID = t.MapCourseID
+		JOIN Players AS p
+		ON p.SteamID32 = t.SteamID32
 		"#,
 	)
 	.fetch_all(&mut conn)
@@ -81,13 +89,17 @@ struct RawRecord {
 	RunTime: i32,
 	Teleports: i32,
 	Created: String,
+	MapName: String,
+	PlayerName: String,
 }
 
 #[derive(Debug, Clone, Serialize)]
 struct Record {
 	id: u32,
 	steam_id: SteamID,
+	player_name: String,
 	map_id: u16,
+	map_name: String,
 	mode: Mode,
 	time: f64,
 	teleports: u32,
@@ -101,7 +113,9 @@ impl TryFrom<RawRecord> for Record {
 		Ok(Self {
 			id: u32::try_from(row.TimeID)?,
 			steam_id: SteamID::from_id32(u32::try_from(row.SteamID32)?),
+			player_name: row.PlayerName,
 			map_id: u16::try_from(row.MapCourseID)?,
+			map_name: row.MapName,
 			mode: match row.Mode {
 				0 => Mode::KZTimer,
 				1 => Mode::SimpleKZ,
