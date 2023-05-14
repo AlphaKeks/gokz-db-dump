@@ -11,7 +11,7 @@ use {
 		types::chrono::{NaiveDateTime, Utc},
 		Connection, FromRow, SqliteConnection,
 	},
-	std::{fs::File, io::Write},
+	std::fs::File,
 };
 
 #[tokio::main]
@@ -52,16 +52,20 @@ async fn main() -> Result<()> {
 	println!("Successfully parsed records.");
 
 	let now = Utc::now().format("%Y-%m-%d_%H-%M-%S");
-	let file_name = format!("gokz-dump-{now}.json");
+	let file_name = format!("gokz-dump-{now}.csv");
 
-	let mut out_file = File::create(&file_name).context("Failed to create dump file.")?;
+	let out_file = File::create(&file_name).context("Failed to create dump file.")?;
+	let mut csv_writer = csv::Writer::from_writer(out_file);
 
-	let json = serde_json::to_vec_pretty(&records).context("Failed to parse records as JSON.")?;
-	out_file
-		.write_all(&json)
-		.context("Failed to write JSON to disk.")?;
+	let n_records = records.len();
 
-	println!("Wrote {} bytes to `{}`.", json.len(), file_name);
+	for record in records {
+		if let Err(why) = csv_writer.serialize(record) {
+			eprintln!("Failed to serialize record as CSV: {why:?}");
+		}
+	}
+
+	println!("Wrote {} records to `{}`.", n_records, file_name);
 
 	Ok(())
 }
@@ -87,7 +91,7 @@ struct Record {
 	mode: Mode,
 	time: f64,
 	teleports: u32,
-	created_at: String,
+	created_on: String,
 }
 
 impl TryFrom<RawRecord> for Record {
@@ -106,7 +110,7 @@ impl TryFrom<RawRecord> for Record {
 			},
 			time: row.RunTime as f64 / 128.0,
 			teleports: u32::try_from(row.Teleports)?,
-			created_at: NaiveDateTime::parse_from_str(&row.Created, "%Y-%m-%d %H:%M:%S")
+			created_on: NaiveDateTime::parse_from_str(&row.Created, "%Y-%m-%d %H:%M:%S")
 				.context("Failed to convert date")?
 				.to_string(),
 		})
