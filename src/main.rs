@@ -37,6 +37,7 @@ async fn main() -> Result<()> {
 		  t.*,
 		  m.MapID AS MapID,
 		  m.Name AS MapName,
+		  c.Course AS Course,
 		  p.Alias AS PlayerName
 		FROM Times AS t
 		JOIN MapCourses AS c
@@ -94,6 +95,7 @@ struct RawRecord {
 	Created: String,
 	MapName: String,
 	MapID: i32,
+	Course: i32,
 	PlayerName: String,
 }
 
@@ -104,6 +106,7 @@ struct Record {
 	player_name: String,
 	map_id: u16,
 	map_name: String,
+	stage: u8,
 	mode: Mode,
 	time: f64,
 	teleports: u32,
@@ -120,6 +123,7 @@ impl TryFrom<RawRecord> for Record {
 			player_name: row.PlayerName,
 			map_id: u16::try_from(row.MapID)?,
 			map_name: row.MapName,
+			stage: u8::try_from(row.Course)?,
 			mode: match row.Mode {
 				0 => Mode::Vanilla,
 				1 => Mode::SimpleKZ,
